@@ -17,8 +17,7 @@ Test Server
 
 Run `./serve.sh`. It uses Ruby core libs, so no gems are needed. Or do any other
 local web server you like, such as `python -m SimpleHTTPServer 8000` or `python
--m http.server 8000` or any of [these][Big list of http static server
-one-liners].
+-m http.server 8000` or any of [these][Big list of http static server one-liners].
 
 Codes
 -----
