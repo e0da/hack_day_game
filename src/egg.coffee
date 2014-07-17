@@ -20,6 +20,9 @@ class EasterEgg
   $ = null unless $
 
   CODES =
+    KATAMARI:
+      CODE: [75, 65, 84, 65, 77, 65, 82, 73]
+      SCRIPT: 'katamari'
     KONAMI:
       CODE: [38, 38, 40, 40, 37, 39, 37, 39, 66, 65]
       SCRIPT: 'game'
@@ -32,6 +35,7 @@ class EasterEgg
     @keySequence = new KeySequence
 
     $(document).keyup (event)=>
+      console.log @keySequence.keys if window.DEBUG
       @keySequence.push event.keyCode
       @checkCodes()
 
