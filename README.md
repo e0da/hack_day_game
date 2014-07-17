@@ -26,6 +26,7 @@ Check `src/egg.coffee` for a complete list of codes as `event.keyCode`s, but
 here's a list of the ones I have so far:
 
 * A B A C A B B
+* K A T A M A R I
 * &uarr; &uarr; &darr; &darr; &larr; &rarr; &larr; &rarr; B A
 
 [Big list of http static server one-liners]: https://gist.github.com/willurd/5720255
