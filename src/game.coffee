@@ -7,10 +7,6 @@ class Controller
     DOWN:   40
     LEFT:   37
     RIGHT:  39
-    W_KEY:  87
-    A_KEY:  65
-    S_KEY:  83
-    D_KEY:  68
     SPACE:  32
     ESC:    27
 
@@ -21,18 +17,18 @@ class Controller
 
   keydown: (event)->
     switch event.keyCode
-      when KEYS.LEFT  or KEYS.A_KEY
+      when KEYS.LEFT
         @left  = true
-      when KEYS.RIGHT or KEYS.D_KEY
+      when KEYS.RIGHT
         @right = true
       when KEYS.SPACE
         @fire = true
 
   keyup: (event)->
     switch event.keyCode
-      when KEYS.LEFT or KEYS.A
+      when KEYS.LEFT
         @left  = false
-      when KEYS.RIGHT or KEYS.D
+      when KEYS.RIGHT
         @right = false
       when KEYS.SPACE
         @fire = false
