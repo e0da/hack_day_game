@@ -17,6 +17,7 @@ class Controller
     $(document).keyup   (event)=> @keyup   event
 
   keydown: (event)->
+    event.preventDefault()
     switch event.keyCode
       when KEYS.LEFT
         @left  = true
@@ -26,6 +27,7 @@ class Controller
         @fire = true
 
   keyup: (event)->
+    event.preventDefault()
     switch event.keyCode
       when KEYS.LEFT
         @left  = false
@@ -43,9 +45,7 @@ class Entity
 class Player extends Entity
 
   constructor: (@game)->
-    super 0, 0, 16, 50, 5, @game
-    @y = ($(@game.canvas).height() - @height)
-    @move @x, @y
+    super 0, 0, 50, 100, 5, @game
 
   render: ->
     @game.ctx.drawImage @game.assets.cannon, @x, @y, @width, @height
@@ -58,13 +58,15 @@ class Player extends Entity
     if @game.controller.fire and @game.canFire()
       @fire()
 
-  move: (x)->
+  move: (x=null)->
+    @y = ($(@game.canvas).height() - @height)
+    # If no x value is given, just make sure it's on the bottom.
+    return super(@x, @y) unless x
+
     super x, @y
 
   fire: ->
     new Cannonball @x, @y, @game
-
-  canFire: -> true
 
 class Projectile extends Entity
 
@@ -78,7 +80,7 @@ class Projectile extends Entity
 class Cannonball extends Projectile
 
   constructor: (@x, @y, @game)->
-    @radius = 10
+    @radius = 50
     @speed  = 20
     super @x, @y, @radius, @radius, @speed, @game, 1
 
@@ -100,8 +102,8 @@ class Game
 
     @canvas           = document.createElement 'canvas'
     @canvas.className = 'js-game'
-    @canvas.width     = 800
-    @canvas.height    = 600
+    @setCanvasSize()
+
     @ctx              = @canvas.getContext '2d'
 
     @projectiles      = []
@@ -155,6 +157,15 @@ class Game
 
   canFire: ->
     @projectiles.length is 0
+
+  setCanvasSize: ->
+    setInterval =>
+      @width  = $(window).innerWidth()
+      @height = $(window).innerHeight()
+      @canvas.width  = @width
+      @canvas.height = @height
+      @player.move()
+    , 100
 
 class Assets
 
