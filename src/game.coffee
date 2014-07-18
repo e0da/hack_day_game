@@ -127,10 +127,10 @@ class Player extends Combatant
   fire: ->
     new Cannonball @x, @y, @game
 
-class Enemy extends Combatant
+class Ship extends Combatant
 
   constructor: (@game)->
-    @image = @game.assets.enemyShip
+    @image   ?= @game.assets.friendlyShip
     super
     @x        = @game.width + @width
     @y        = @height
@@ -145,6 +145,12 @@ class Enemy extends Combatant
 
   move: (x)->
     super x, @y
+
+class Enemy extends Ship
+
+  constructor: (@game)->
+    @image = @game.assets.enemyShip
+    super
 
 class BounceEnemy extends Enemy
 
@@ -196,6 +202,21 @@ class Cannonball extends Projectile
     super
     @move @x, @y-@speed
 
+class Explosion extends Entity
+
+  constructor: (@x, @y, @game) ->
+    @image = @game.assets.explosion
+    super @game
+    @width  = 150
+    @height = @width
+    @speed  = 0
+    @duration = 250
+    @born = @game.timestamp()
+    @game.addExplosion @
+
+  update: ->
+    @game.removeExplosion(@) if (@game.timestamp() - @born > @duration)
+
 class Game
 
   constructor: (@assets)->
@@ -212,7 +233,8 @@ class Game
     @ctx              = @canvas.getContext '2d'
 
     @projectiles      = []
-    @enemies          = [@randomEnemyType()]
+    @explosions       = []
+    @enemies          = [@randomShip()]
 
     $('body').append @canvas
 
@@ -226,14 +248,16 @@ class Game
     @player.update()
     @updateEnemies()
     @updateProjectiles()
+    @updateExplosions()
     @handleCollisions()
     @randomAddEnemy()
 
   render: ->
     @renderBackground()
-    @player.render()
     @renderEnemies()
     @renderProjectiles()
+    @player.render()
+    @renderExplosions()
 
   frame: ->
     now = @timestamp()
@@ -250,6 +274,14 @@ class Game
 
   renderBackground: ->
     @ctx.clearRect 0, 0, @width, @height
+
+  updateExplosions: ->
+    for explosion of @explosions
+      @explosions[explosion].update()
+
+  renderExplosions: ->
+    for explosion of @explosions
+      @explosions[explosion].render()
 
   updateProjectiles: ->
     for projectile of @projectiles
@@ -271,24 +303,26 @@ class Game
     for projectile of @projectiles
       for enemy of @enemies
         # this first antecident fixes a glitch
-        if @isCollision @projectiles[projectile], @enemies[enemy]
+        if (@projectiles[projectile] != undefined) and (@isCollision @projectiles[projectile], @enemies[enemy])
           @killEnemy @enemies[enemy]
           @removeProjectile @projectiles[projectile]
 
   killEnemy: (enemy)->
     @enemies.splice @enemies.indexOf(enemy), 1
+    @addExplosion new Explosion(enemy.x, enemy.y, @)
 
   addEnemy: ->
-    @enemies.push @randomEnemyType()
+    if @enemies.length < 10
+      @enemies.push @randomShip()
 
-  randomEnemyType: ->
-    type = Math.floor(Math.random() * 2)
+  randomShip: ->
+    type = Math.floor(Math.random() * 3)
     switch type
-      when 0 then return new Enemy @
-      when 1 then return new BounceEnemy @
+      when 0 then return new Ship @
+      else        return new BounceEnemy @
 
   randomAddEnemy: ->
-    if (1 == Math.floor(Math.random() * 100))
+    if (1 == Math.floor(Math.random() * 50))
      @addEnemy()
 
   isCollision: (entity1, entity2)->
@@ -314,6 +348,13 @@ class Game
   removeProjectile: (projectile)->
     @projectiles.splice @projectiles.indexOf(projectile), 1
 
+  addExplosion: (explosion)->
+    @explosions.push explosion
+
+  removeExplosion: (explosion)->
+    @explosions.splice @explosions.indexOf(explosion), 1
+
+
   setCanvasSize: ->
     setInterval =>
       @width  = $(window).innerWidth()
@@ -327,9 +368,11 @@ class Assets
 
   constructor: (callback)->
     @loadAssets callback
-    @cannonball = @createImage 'assets/cannonball.png'
-    @cannon     = @createImage 'assets/cannon.png'
-    @enemyShip  = @createImage 'assets/enemy-ship.png'
+    @cannon       = @createImage 'assets/cannon.png'
+    @cannonball   = @createImage 'assets/cannonball.png'
+    @enemyShip    = @createImage 'assets/enemy-ship.png'
+    @explosion    = @createImage 'assets/explosion.png'
+    @friendlyShip = @createImage 'assets/friendly-ship.png'
 
   loadAssets: (callback)->
     style       = document.createElement('style')
