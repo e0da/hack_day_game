@@ -85,7 +85,8 @@ class Cannonball extends Projectile
 
   constructor: (@x, @y, @game)->
     @radius = 10
-    super @x, @y, @radius, @radius, 50, @game, 1
+    @speed  = 10
+    super @x, @y, @radius, @radius, @speed, @game, 1
 
   update: ->
     super
@@ -118,8 +119,6 @@ class Game
 
     @controller = new Controller @
     @player     = new Player 0, 0, 16, 100, 5, @
-
-  keys: ->
 
   timestamp: ->
     window.performance.now()
@@ -162,6 +161,7 @@ class Game
     @projectiles.push projectile
 
   removeProjectile: (projectile)->
+    @projectiles.splice @projectiles.indexOf(projectile), 1
 
   canFire: ->
     @projectiles.length is 0
