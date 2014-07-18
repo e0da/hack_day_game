@@ -10,11 +10,14 @@ class Controller
     RIGHT:  39
     SPACE:  32
     ESC:    27
+    Y:      121
+    M:      109
 
   constructor: (@game)->
     [@left, @right, @fire] = [false, false, false]
-    $(document).keydown (event)=> @keydown event
-    $(document).keyup   (event)=> @keyup   event
+    $(document).keydown  (event)=> @keydown  event
+    $(document).keyup    (event)=> @keyup    event
+    $(document).keypress (event)=> @keypress event
 
   keydown: (event)->
     switch event.keyCode
@@ -39,6 +42,13 @@ class Controller
       when KEYS.SPACE
         event.preventDefault()
         @fire = false
+
+  keypress: (event)->
+    switch event.keyCode
+      when KEYS.Y
+        @game.assets.toggleBgMusicSelection()
+      when KEYS.M
+        @game.assets.toggleBgMusicPlayback()
 
 class Entity
 
@@ -213,6 +223,7 @@ class Explosion extends Entity
     @duration = 250
     @born = @game.timestamp()
     @game.addExplosion @
+    @game.assets.boom()
 
   update: ->
     @game.removeExplosion(@) if (@game.timestamp() - @born > @duration)
@@ -271,6 +282,7 @@ class Game
 
   run: ->
     window.requestAnimationFrame => @frame()
+    @assets.toggleBgMusicPlayback()
 
   renderBackground: ->
     @ctx.clearRect 0, 0, @width, @height
@@ -368,11 +380,14 @@ class Assets
 
   constructor: (callback)->
     @loadAssets callback
-    @cannon       = @createImage 'assets/cannon.png'
-    @cannonball   = @createImage 'assets/cannonball.png'
-    @enemyShip    = @createImage 'assets/enemy-ship.png'
-    @explosion    = @createImage 'assets/explosion.png'
-    @friendlyShip = @createImage 'assets/friendly-ship.png'
+    @cannon       = @createImage 'cannon.png'
+    @cannonball   = @createImage 'cannonball.png'
+    @enemyShip    = @createImage 'enemy-ship.png'
+    @explosion    = @createImage 'explosion.png'
+    @friendlyShip = @createImage 'friendly-ship.png'
+
+    @bgMusic   = @createAudio 'drunken-lullabies.mp3', volume: 0.5, loop: true
+    @boomSound = @createAudio 'boom.mp3'
 
   loadAssets: (callback)->
     style       = document.createElement('style')
@@ -386,10 +401,32 @@ class Assets
     """
     $('head').append style
 
-  createImage: (url)->
+  createImage: (name)->
     img = document.createElement 'img'
-    img.src = url
+    img.src = "assets/#{name}"
     img
+
+  createAudio: (name, options = {})->
+    audio = document.createElement 'audio'
+    audio.src = "assets/#{name}"
+    audio.loop = options.loop || false
+    audio.volume = options.volume || 0.5
+    audio
+
+  boom: ->
+    @boomSound.cloneNode().play()
+
+  toggleBgMusicSelection: ->
+    console.log 'ronk'
+    @bgMusic.src = if @bgMusic.src.match /yakkity-sax/
+        'assets/drunken-lullabies.mp3'
+      else
+        'assets/yakkity-sax.mp3'
+    @bgMusic.curentTime = 0
+    @bgMusic.play()
+
+  toggleBgMusicPlayback: ->
+    if @bgMusic.paused then @bgMusic.play() else @bgMusic.pause()
 
 unless window.GAME_LOADED
   (new Game(new Assets)).run()
