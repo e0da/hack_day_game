@@ -89,6 +89,32 @@ class Enemy extends Entity
 
   move: (x)->
     super x, @y
+		
+class BounceEnemy extends Enemy
+
+  constructor: (@game)->
+    super @game
+    @y =  @height
+    @x =  -@width
+    @move @x, @y
+    @isRight = true
+    @sinIndex = 0
+
+  render: ->
+    super
+
+  update: ->
+    @y = @height + 20*Math.sin(@sinIndex / 10)
+    @sinIndex += 1
+    if @isRight
+      @move(@x + @speed)
+    else
+      @move(@x - @speed)
+    @isRight = true if @x < 0
+    @isRight = false if @x > @game.width - @width
+
+  move: (x)->
+    super x
 
 class Projectile extends Entity
 
@@ -98,7 +124,7 @@ class Projectile extends Entity
   update: ->
     if @y > @game.height || @y < 0 || @x > @game.width || @x < 0
       @game.removeProjectile @
-
+	 
 class Cannonball extends Projectile
 
   constructor: (@x, @y, @game)->
@@ -118,7 +144,7 @@ class Game
   constructor: (@assets)->
     @dt     = null
     @last   = @timestamp()
-    @step   = 1/60
+    @step   = 1 / 60
     @width  = 800
     @height = 600
 
@@ -129,7 +155,7 @@ class Game
     @ctx              = @canvas.getContext '2d'
 
     @projectiles      = []
-    @enemies          = [new Enemy @]
+    @enemies          = [@randomEnemyType()]
 
     $('body').append @canvas
 
@@ -188,21 +214,27 @@ class Game
       for enemy of @enemies
         if @isCollision @projectiles[projectile], @enemies[enemy]
           @killEnemy @enemies[enemy]
+          @removeProjectile @projectiles[projectile]
           @addEnemy()
 
   killEnemy: (enemy)->
     @enemies.splice @enemies.indexOf(enemy), 1
 
   addEnemy: ->
-    @enemies = [new Enemy @]
+    @enemies = [@randomEnemyType()]
+
+  randomEnemyType: ->
+    type = Math.floor(Math.random() * 2)
+    switch type
+      when 0 then return new Enemy @
+      when 1 then return new BounceEnemy @ 
 
   isCollision: (entity1, entity2)->
     points = []
-    points.push x: entity1.x,                y: entity1.y
-    points.push x: entity1.x+entity1.width,  y: entity1.y
-    points.push x: entity1.x,                y: entity1.y+entity1.height
-    points.push x: entity1.x+entity1.width,  y: entity1.y+entity1.height
-
+    points.push x: entity1.x + 0.15*entity1.width, y: entity1.y + 0.15*entity1.height
+    points.push x: entity1.x + 0.85*entity1.width, y: entity1.y + 0.15*entity1.height
+    points.push x: entity1.x + 0.15*entity1.width, y: entity1.y + 0.85*entity1.height
+    points.push x: entity1.x + 0.85*entity1.width, y: entity1.y + 0.85*entity1.height
     for point of points
       return true if @isPointInEntity points[point], entity2
     false
