@@ -196,6 +196,20 @@ class Cannonball extends Projectile
     super
     @move @x, @y-@speed
 
+class Explosion extends Projectile
+
+  constructor: (@x, @y, @game) ->
+    @image = @game.assets.explosion
+    super
+    @radius = 150
+    @speed = 0
+    @time = 10
+
+  update: ->
+    if @time < 1
+      @game.removeProjectile(@)
+    @time -= 1
+
 class Game
 
   constructor: (@assets)->
@@ -271,7 +285,8 @@ class Game
     for projectile of @projectiles
       for enemy of @enemies
         # this first antecident fixes a glitch
-        if @isCollision @projectiles[projectile], @enemies[enemy]
+        if (@projectiles[projectile] != undefined) and (@isCollision @projectiles[projectile], @enemies[enemy])
+          @addProjectile (new Explosion(@enemies[enemy].x, @enemies[enemy].y, @))
           @killEnemy @enemies[enemy]
           @removeProjectile @projectiles[projectile]
 
@@ -289,7 +304,7 @@ class Game
       when 1 then return new BounceEnemy @
 
   randomAddEnemy: ->
-    if (1 == Math.floor(Math.random() * 100))
+    if (1 == Math.floor(Math.random() * 600))
      @addEnemy()
 
   isCollision: (entity1, entity2)->
