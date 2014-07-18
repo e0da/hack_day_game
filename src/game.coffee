@@ -187,7 +187,5 @@ class Assets
     img
 
 unless window.GAME_LOADED
-  assets = new Assets
-  game   = new Game(new Assets)
-  game.run()
+  (new Game(new Assets)).run()
   window.GAME_LOADED = true
