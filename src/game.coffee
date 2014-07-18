@@ -222,7 +222,8 @@ class Game
     @enemies.splice @enemies.indexOf(enemy), 1
 
   addEnemy: ->
-    @enemies[@enemies.length] = @randomEnemyType() #problem 
+    if @enemies.length < 10
+      @enemies[@enemies.length] = @randomEnemyType()
 
   randomEnemyType: ->
     type = Math.floor(Math.random() * 2)
@@ -275,6 +276,7 @@ class Assets
     @cannonball = @createImage 'assets/cannonball.png'
     @cannon     = @createImage 'assets/cannon.png'
     @enemyShip  = @createImage 'assets/enemy-ship.png'
+    @explosion  = @createImage 'assets/explosion.png'
 
   loadAssets: (callback)->
     link        = document.createElement('link')
