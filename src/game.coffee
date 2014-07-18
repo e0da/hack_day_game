@@ -90,7 +90,8 @@ class Projectile extends Entity
 
   constructor: (@x, @y, @width, @height, @speed, @game, @strength)->
     @game.addProjectile @
-update: ->
+
+  update: ->
     if @y > @game.height || @y < 0 || @x > @game.width || @x < 0
       @game.removeProjectile @
 
@@ -102,6 +103,7 @@ class Cannonball extends Projectile
     super @x, @y, @radius, @radius, @speed, @game, 1
 
   update: ->
+    super
     @move @x, @y-@speed
 
   render: ->
