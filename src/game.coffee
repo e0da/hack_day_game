@@ -68,44 +68,29 @@ class Player extends Entity
   fire: ->
     new Cannonball @x, @y, @game
 
-<<<<<<< HEAD
-=======
-  canFire: -> true
-
 class Enemy extends Entity
 
   constructor: (@game)->
     super 0, 0, 16, 50, 5, @game
-    @y = ($(@game.canvas).height() - @height)
+    @y =  @height
+    @x = -@width
     @move @x, @y
 
   render: ->
-    @game.ctx.drawImage @game.assets.cannon, @x, @y, @width, @height
+    @game.ctx.drawImage @game.assets.enemyShip, @x, @y, @width, @height
 
   update: ->
-    if @game.controller.left
-      @move(@x - @speed) unless @x < 0
-    if @game.controller.right
-      @move(@x + @speed) unless @x > @game.width
-    if @game.controller.fire and @game.canFire()
-      @fire()
+    @move(@x + @speed)
+    @move(-@width) if @x > @game.width+@width
 
   move: (x)->
     super x, @y
 
-  fire: ->
-    new Cannonball @x, @y, @game
-
-  canFire: -> true
-
-
->>>>>>> enemy started
 class Projectile extends Entity
 
   constructor: (@x, @y, @width, @height, @speed, @game, @strength)->
     @game.addProjectile @
-
-  update: ->
+update: ->
     if @y > @game.height || @y < 0 || @x > @game.width || @x < 0
       @game.removeProjectile @
 
@@ -117,7 +102,6 @@ class Cannonball extends Projectile
     super @x, @y, @radius, @radius, @speed, @game, 1
 
   update: ->
-    super
     @move @x, @y-@speed
 
   render: ->
@@ -144,17 +128,20 @@ class Game
 
     @controller = new Controller @
     @player     = new Player @
+    @enemy      = new Enemy @
 
   timestamp: ->
     window.performance.now()
 
   update: ->
     @player.update()
+    @enemy.update()
     @updateProjectiles()
 
   render: ->
     @renderBackground()
     @player.render()
+    @enemy.render()
     @renderProjectiles()
 
   frame: ->
@@ -205,6 +192,7 @@ class Assets
     @loadAssets callback
     @cannonball = @createImage 'assets/cannonball.png'
     @cannon     = @createImage 'assets/cannon.png'
+    @enemyShip  = @createImage 'assets/enemy-ship.png'
 
   loadAssets: (callback)->
     link        = document.createElement('link')
