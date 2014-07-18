@@ -162,9 +162,6 @@ class BounceEnemy extends Enemy
     @isRight = true
     @sinIndex = 0
 
-  render: ->
-    super
-
   update: ->
     @y = @height + 20*Math.sin(@sinIndex / 10)
     @sinIndex += 1
@@ -172,8 +169,13 @@ class BounceEnemy extends Enemy
       @move(@x + @speed)
     else
       @move(@x - @speed)
-    @isRight = true if @x < 0
-    @isRight = false if @x > @game.width - @width
+    if @x < 0
+      @isRight = true 
+      @image = @game.assets.enemyShip
+    if @x > @game.width - @width
+      @isRight = false
+      @image = @game.assets.enemyShipLeft
+	  
 
   move: (x)->
     super x
@@ -373,6 +375,7 @@ class Assets
     @enemyShip    = @createImage 'assets/enemy-ship.png'
     @explosion    = @createImage 'assets/explosion.png'
     @friendlyShip = @createImage 'assets/friendly-ship.png'
+    @enemyShipLeft= @createImage 'assets/enemy-ship-left.png'
 
   loadAssets: (callback)->
     style       = document.createElement('style')
