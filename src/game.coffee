@@ -170,6 +170,7 @@ class Game
     @updateEnemies()
     @updateProjectiles()
     @handleCollisions()
+    @randomAddEnemy()
 
   render: ->
     @renderBackground()
@@ -212,23 +213,27 @@ class Game
   handleCollisions: ->
     for projectile of @projectiles
       for enemy of @enemies
-        if @isCollision @projectiles[projectile], @enemies[enemy]
+		# this first antecident fixes a glitch  
+        if (@projectiles[projectile] != undefined) and (@isCollision @projectiles[projectile], @enemies[enemy])
           @killEnemy @enemies[enemy]
           @removeProjectile @projectiles[projectile]
-          @addEnemy()
 
   killEnemy: (enemy)->
     @enemies.splice @enemies.indexOf(enemy), 1
 
   addEnemy: ->
-    @enemies = [@randomEnemyType()]
+    @enemies[@enemies.length] = @randomEnemyType() #problem 
 
   randomEnemyType: ->
     type = Math.floor(Math.random() * 2)
     switch type
       when 0 then return new Enemy @
       when 1 then return new BounceEnemy @ 
-
+	  
+  randomAddEnemy: ->
+    if (1 == Math.floor(Math.random() * 100))
+     @addEnemy()
+  
   isCollision: (entity1, entity2)->
     points = []
     points.push x: entity1.x + 0.15*entity1.width, y: entity1.y + 0.15*entity1.height
