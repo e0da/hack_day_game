@@ -17,23 +17,27 @@ class Controller
     $(document).keyup   (event)=> @keyup   event
 
   keydown: (event)->
-    event.preventDefault()
     switch event.keyCode
       when KEYS.LEFT
+        event.preventDefault()
         @left  = true
       when KEYS.RIGHT
+        event.preventDefault()
         @right = true
       when KEYS.SPACE
+        event.preventDefault()
         @fire = true
 
   keyup: (event)->
-    event.preventDefault()
     switch event.keyCode
       when KEYS.LEFT
+        event.preventDefault()
         @left  = false
       when KEYS.RIGHT
+        event.preventDefault()
         @right = false
       when KEYS.SPACE
+        event.preventDefault()
         @fire = false
 
 class Entity
@@ -67,6 +71,24 @@ class Player extends Entity
 
   fire: ->
     new Cannonball @x, @y, @game
+
+class Enemy extends Entity
+
+  constructor: (@game)->
+    super 0, 0, 100, 100, 10, @game
+    @y =  @height
+    @x =  @game.width + @width
+    @move @x, @y
+
+  render: ->
+    @game.ctx.drawImage @game.assets.enemyShip, @x, @y, @width, @height
+
+  update: ->
+    @move(@x - @speed)
+    @move(@game.width + @width) if @x < -@width
+
+  move: (x)->
+    super x, @y
 
 class Projectile extends Entity
 
@@ -107,6 +129,7 @@ class Game
     @ctx              = @canvas.getContext '2d'
 
     @projectiles      = []
+    @enemies          = [new Enemy @]
 
     $('body').append @canvas
 
@@ -118,11 +141,14 @@ class Game
 
   update: ->
     @player.update()
+    @updateEnemies()
     @updateProjectiles()
+    @handleCollisions()
 
   render: ->
     @renderBackground()
     @player.render()
+    @renderEnemies()
     @renderProjectiles()
 
   frame: ->
@@ -149,6 +175,44 @@ class Game
     for projectile of @projectiles
       @projectiles[projectile].render()
 
+  updateEnemies: ->
+    for enemy of @enemies
+      @enemies[enemy].update()
+
+  renderEnemies: ->
+    for enemy of @enemies
+      @enemies[enemy].render()
+
+  handleCollisions: ->
+    for projectile of @projectiles
+      for enemy of @enemies
+        if @isCollision @projectiles[projectile], @enemies[enemy]
+          @killEnemy @enemies[enemy]
+          @addEnemy()
+
+  killEnemy: (enemy)->
+    @enemies.splice @enemies.indexOf(enemy), 1
+
+  addEnemy: ->
+    @enemies = [new Enemy @]
+
+  isCollision: (entity1, entity2)->
+    points = []
+    points.push x: entity1.x,                y: entity1.y
+    points.push x: entity1.x+entity1.width,  y: entity1.y
+    points.push x: entity1.x,                y: entity1.y+entity1.height
+    points.push x: entity1.x+entity1.width,  y: entity1.y+entity1.height
+
+    for point of points
+      return true if @isPointInEntity points[point], entity2
+    false
+
+  isPointInEntity: (point, entity)->
+    (
+      point.x > entity.x && point.x < (entity.x+entity.width) &&
+      point.y > entity.y && point.y < (entity.y+entity.height)
+    )
+
   addProjectile: (projectile)->
     @projectiles.push projectile
 
@@ -173,6 +237,7 @@ class Assets
     @loadAssets callback
     @cannonball = @createImage 'assets/cannonball.png'
     @cannon     = @createImage 'assets/cannon.png'
+    @enemyShip  = @createImage 'assets/enemy-ship.png'
 
   loadAssets: (callback)->
     link        = document.createElement('link')
