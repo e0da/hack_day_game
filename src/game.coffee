@@ -41,16 +41,14 @@ class Entity
 
 class Player extends Entity
 
-  constructor: ->
-    super
-    @y = ($('body').height() - @height)
+  constructor: (@game)->
+    super 0, 0, 16, 50, 5, @game
+    @y = ($(@game.canvas).height() - @height)
     @move @x, @y
 
   render: ->
     @game.ctx.fillStyle   = '#000000'
-    @game.ctx.strokeStyle = '#dd0000'
     @game.ctx.fillRect   @x, @y, @width, @height
-    @game.ctx.strokeRect @x, @y, @width, @height
 
   update: ->
     if @game.controller.left
@@ -105,16 +103,18 @@ class Game
     @width  = 800
     @height = 600
 
-    @canvas = document.createElement 'canvas'
-    @canvas.width  = 800
-    @canvas.height = 600
-    @ctx = @canvas.getContext '2d'
-    @projectiles = []
+    @canvas           = document.createElement 'canvas'
+    @canvas.className = 'js-game'
+    @canvas.width     = 800
+    @canvas.height    = 600
+    @ctx              = @canvas.getContext '2d'
+
+    @projectiles      = []
 
     $('body').append @canvas
 
     @controller = new Controller @
-    @player     = new Player 0, 0, 16, 100, 5, @
+    @player     = new Player @
 
   timestamp: ->
     window.performance.now()
@@ -142,8 +142,7 @@ class Game
     window.requestAnimationFrame => @frame()
 
   renderBackground: ->
-    @ctx.fillStyle = '#fff'
-    @ctx.fillRect 0, 0, @width, @height
+    @ctx.clearRect 0, 0, @width, @height
 
   updateProjectiles: ->
     for projectile of @projectiles
@@ -162,4 +161,16 @@ class Game
   canFire: ->
     @projectiles.length is 0
 
-(new Game).run()
+class Assets
+
+  constructor: (callback)->
+    @loadAssets callback
+
+  loadAssets: (callback)->
+    link        = document.createElement('link')
+    link.href   = 'assets/game.css'
+    link.rel    = 'stylesheet'
+    link.onload = callback
+    $('head').append link
+
+new Assets (new Game).run()
