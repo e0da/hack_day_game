@@ -17,23 +17,27 @@ class Controller
     $(document).keyup   (event)=> @keyup   event
 
   keydown: (event)->
-    event.preventDefault()
     switch event.keyCode
       when KEYS.LEFT
+        event.preventDefault()
         @left  = true
       when KEYS.RIGHT
+        event.preventDefault()
         @right = true
       when KEYS.SPACE
+        event.preventDefault()
         @fire = true
 
   keyup: (event)->
-    event.preventDefault()
     switch event.keyCode
       when KEYS.LEFT
+        event.preventDefault()
         @left  = false
       when KEYS.RIGHT
+        event.preventDefault()
         @right = false
       when KEYS.SPACE
+        event.preventDefault()
         @fire = false
 
 class Entity
@@ -71,7 +75,7 @@ class Player extends Entity
 class Enemy extends Entity
 
   constructor: (@game)->
-    super 0, 0, 16, 50, 5, @game
+    super 0, 0, 100, 100, 5, @game
     @y =  @height
     @x = -@width
     @move @x, @y
