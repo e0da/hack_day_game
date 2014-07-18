@@ -42,28 +42,83 @@ class Controller
 
 class Entity
 
-  constructor: (@x, @y, @width, @height, @speed, @game)->
+  constructor: (@game)->
+    @x      ?= 0
+    @y      ?= 0
+    @width  ?= 0
+    @height ?= 0
+    @speed  ?= 0
+    @image  ?= null
 
   move: (@x, @y)->
 
-class Player extends Entity
+  render: ->
+    @game.ctx.drawImage(
+      @image,
+      @renderBox().offset().x(),
+      @renderBox().offset().y(),
+      @renderBox().width(),
+      @renderBox().height()
+    )
+
+  box: ->
+    left:   => @x
+    right:  => @x + @width
+    top:    => @y
+    bottom: => @y + @height
+
+  renderBox: ->
+    scale   = 1.2
+    width:  => @width * scale
+    height: => @height * scale
+    offset: =>
+      x: => @x - (0.5*scale*@width)
+      y: => @y + (0.5*scale*@height)
+
+  isOutOfBounds: ->
+    (
+      @box().left()   < 0 ||
+      @box().right()  > @game.width ||
+      @box().top()    < 0 ||
+      @box().bottom() > @game.height
+    )
+
+class Combatant extends Entity
 
   constructor: (@game)->
-    super 0, 0, 50, 100, 5, @game
+    super
+    @fireRate  ?= 0
+    @lastFired  = 0
 
-  render: ->
-    @game.ctx.drawImage @game.assets.cannon, @x, @y, @width, @height
+  canFire: ->
+    now = @game.timestamp()
+    if (now - @lastFired) >= (@fireRate*1000)
+      @lastFired = now
+      true
+    else
+      false
+
+class Player extends Combatant
+
+  constructor: (@game)->
+    @image = @game.assets.cannon
+    super
+    @width    = 50
+    @height   = 100
+    @speed    = 5
+    @fireRate = 0.25
+    @$canvas  = $(@game.canvas)
 
   update: ->
     if @game.controller.left
       @move(@x - @speed) unless @x < 0
     if @game.controller.right
       @move(@x + @speed) unless @x > @game.width
-    if @game.controller.fire and @game.canFire()
+    if @game.controller.fire and @canFire()
       @fire()
 
   move: (x=null)->
-    @y = ($(@game.canvas).height() - @height)
+    @y = @$canvas.height() - @renderBox().height()
     # If no x value is given, just make sure it's on the bottom.
     return super(@x, @y) unless x
 
@@ -72,16 +127,17 @@ class Player extends Entity
   fire: ->
     new Cannonball @x, @y, @game
 
-class Enemy extends Entity
+class Enemy extends Combatant
 
   constructor: (@game)->
-    super 0, 0, 100, 100, 10, @game
-    @y =  @height
-    @x =  @game.width + @width
-    @move @x, @y
-
-  render: ->
-    @game.ctx.drawImage @game.assets.enemyShip, @x, @y, @width, @height
+    @image = @game.assets.enemyShip
+    super
+    @x        = @game.width + @width
+    @y        = @height
+    @width    = 100
+    @height   = 100
+    @speed    = 10
+    @fireRate = 1
 
   update: ->
     @move(@x - @speed)
@@ -92,26 +148,27 @@ class Enemy extends Entity
 
 class Projectile extends Entity
 
-  constructor: (@x, @y, @width, @height, @speed, @game, @strength)->
+  constructor: (@game)->
+    super
+    @strenth ?= 0
     @game.addProjectile @
 
   update: ->
-    if @y > @game.height || @y < 0 || @x > @game.width || @x < 0
-      @game.removeProjectile @
+    @game.removeProjectile(@) if @isOutOfBounds()
 
 class Cannonball extends Projectile
 
   constructor: (@x, @y, @game)->
-    @radius = 50
-    @speed  = 20
-    super @x, @y, @radius, @radius, @speed, @game, 1
+    @image = @game.assets.cannonball
+    super @game
+    @width   = 25
+    @height  = @width
+    @speed   = 20
+    @strenth = 1
 
   update: ->
     super
     @move @x, @y-@speed
-
-  render: ->
-    @game.ctx.drawImage @game.assets.cannonball, @x, @y, @radius, @radius
 
 class Game
 
@@ -198,10 +255,10 @@ class Game
 
   isCollision: (entity1, entity2)->
     points = []
-    points.push x: entity1.x,                y: entity1.y
-    points.push x: entity1.x+entity1.width,  y: entity1.y
-    points.push x: entity1.x,                y: entity1.y+entity1.height
-    points.push x: entity1.x+entity1.width,  y: entity1.y+entity1.height
+    points.push x: entity1.box().left(),  y: entity1.box().top()
+    points.push x: entity1.box().right(), y: entity1.box().top()
+    points.push x: entity1.box().left(),  y: entity1.box().bottom()
+    points.push x: entity1.box().right(), y: entity1.box().bottom()
 
     for point of points
       return true if @isPointInEntity points[point], entity2
@@ -209,8 +266,8 @@ class Game
 
   isPointInEntity: (point, entity)->
     (
-      point.x > entity.x && point.x < (entity.x+entity.width) &&
-      point.y > entity.y && point.y < (entity.y+entity.height)
+      point.x > entity.box().left() && point.x < (entity.box().right()) &&
+      point.y > entity.box().top()  && point.y < (entity.box().bottom())
     )
 
   addProjectile: (projectile)->
@@ -218,9 +275,6 @@ class Game
 
   removeProjectile: (projectile)->
     @projectiles.splice @projectiles.indexOf(projectile), 1
-
-  canFire: ->
-    @projectiles.length is 0
 
   setCanvasSize: ->
     setInterval =>
@@ -240,11 +294,16 @@ class Assets
     @enemyShip  = @createImage 'assets/enemy-ship.png'
 
   loadAssets: (callback)->
-    link        = document.createElement('link')
-    link.href   = 'assets/game.css'
-    link.rel    = 'stylesheet'
-    link.onload = callback
-    $('head').append link
+    style       = document.createElement('style')
+    style.innerText = """
+      .js-game {
+        position: absolute;
+        top: 0px;
+        left: 0px;
+        z-index: 999999;
+      }
+    """
+    $('head').append style
 
   createImage: (url)->
     img = document.createElement 'img'
