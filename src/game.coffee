@@ -68,6 +68,38 @@ class Player extends Entity
   fire: ->
     new Cannonball @x, @y, @game
 
+<<<<<<< HEAD
+=======
+  canFire: -> true
+
+class Enemy extends Entity
+
+  constructor: (@game)->
+    super 0, 0, 16, 50, 5, @game
+    @y = ($(@game.canvas).height() - @height)
+    @move @x, @y
+
+  render: ->
+    @game.ctx.drawImage @game.assets.cannon, @x, @y, @width, @height
+
+  update: ->
+    if @game.controller.left
+      @move(@x - @speed) unless @x < 0
+    if @game.controller.right
+      @move(@x + @speed) unless @x > @game.width
+    if @game.controller.fire and @game.canFire()
+      @fire()
+
+  move: (x)->
+    super x, @y
+
+  fire: ->
+    new Cannonball @x, @y, @game
+
+  canFire: -> true
+
+
+>>>>>>> enemy started
 class Projectile extends Entity
 
   constructor: (@x, @y, @width, @height, @speed, @game, @strength)->
