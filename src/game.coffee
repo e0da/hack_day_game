@@ -1,5 +1,6 @@
 $ = jQuery
 
+
 class Controller
 
   KEYS =
@@ -47,8 +48,7 @@ class Player extends Entity
     @move @x, @y
 
   render: ->
-    @game.ctx.fillStyle   = '#000000'
-    @game.ctx.fillRect   @x, @y, @width, @height
+    @game.ctx.drawImage @game.assets.cannon, @x, @y, @width, @height
 
   update: ->
     if @game.controller.left
@@ -79,7 +79,7 @@ class Cannonball extends Projectile
 
   constructor: (@x, @y, @game)->
     @radius = 10
-    @speed  = 10
+    @speed  = 20
     super @x, @y, @radius, @radius, @speed, @game, 1
 
   update: ->
@@ -87,16 +87,11 @@ class Cannonball extends Projectile
     @move @x, @y-@speed
 
   render: ->
-    @game.ctx.fillStyle   = '#000000'
-    @game.ctx.strokeStyle = '#dd0000'
-    @game.ctx.beginPath()
-    @game.ctx.arc @x, @y, @radius, 0, 360, true
-    @game.ctx.closePath()
-    @game.ctx.fill()
+    @game.ctx.drawImage @game.assets.cannonball, @x, @y, @radius, @radius
 
 class Game
 
-  constructor: ->
+  constructor: (@assets)->
     @dt     = null
     @last   = @timestamp()
     @step   = 1/60
@@ -165,6 +160,8 @@ class Assets
 
   constructor: (callback)->
     @loadAssets callback
+    @cannonball = @createImage 'assets/cannonball.png'
+    @cannon     = @createImage 'assets/cannon.png'
 
   loadAssets: (callback)->
     link        = document.createElement('link')
@@ -173,4 +170,13 @@ class Assets
     link.onload = callback
     $('head').append link
 
-new Assets (new Game).run()
+  createImage: (url)->
+    img = document.createElement 'img'
+    img.src = url
+    img
+
+unless window.GAME_LOADED
+  assets = new Assets
+  game   = new Game(new Assets)
+  game.run()
+  window.GAME_LOADED = true
