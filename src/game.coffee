@@ -279,7 +279,8 @@ class Game
     @enemies.splice @enemies.indexOf(enemy), 1
 
   addEnemy: ->
-    @enemies.push @randomEnemyType()
+    if @enemies.length < 10
+      @enemies.push @randomEnemyType()
 
   randomEnemyType: ->
     type = Math.floor(Math.random() * 2)
@@ -330,6 +331,7 @@ class Assets
     @cannonball = @createImage 'assets/cannonball.png'
     @cannon     = @createImage 'assets/cannon.png'
     @enemyShip  = @createImage 'assets/enemy-ship.png'
+    @explosion  = @createImage 'assets/explosion.png'
 
   loadAssets: (callback)->
     style       = document.createElement('style')
