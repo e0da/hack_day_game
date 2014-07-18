@@ -58,10 +58,10 @@ class Player extends Entity
 
   update: ->
     if @game.controller.left
-      @move(@x - @speed)
+      @move(@x - @speed) unless @x < 0
     if @game.controller.right
-      @move(@x + @speed)
-    if @game.controller.fire and @canFire()
+      @move(@x + @speed) unless @x > @game.width
+    if @game.controller.fire and @game.canFire()
       @fire()
 
   move: (x)->
@@ -88,6 +88,7 @@ class Cannonball extends Projectile
     super @x, @y, @radius, @radius, 50, @game, 1
 
   update: ->
+    super
     @move @x, @y-@speed
 
   render: ->
@@ -161,6 +162,8 @@ class Game
     @projectiles.push projectile
 
   removeProjectile: (projectile)->
-    @projectiles.splice @projectiles.indexOf(projectile), 1
+
+  canFire: ->
+    @projectiles.length is 0
 
 (new Game).run()
