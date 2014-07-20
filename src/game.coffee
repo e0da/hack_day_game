@@ -53,44 +53,57 @@ class Controller
 class Entity
 
   constructor: (@game)->
-    @x      ?= 0
-    @y      ?= 0
-    @width  ?= 0
-    @height ?= 0
-    @speed  ?= 0
-    @image  ?= null
+    @x           ?= 0
+    @y           ?= 0
+    @width       ?= 0
+    @height      ?= 0
+    @speed       ?= 0
+    @image       ?= null
+    @drawScale ?= 1.2
+
+    @box =
+      top:    0
+      bottom: 0
+      left:   0
+      right:  0
+
+    @drawBox =
+      width:  0
+      height: 0
+      offset:
+        x: 0
+        y: 0
 
   move: (@x, @y)->
 
-  render: ->
+    @box =
+      top:    @y
+      bottom: @y + @height
+      left:   @x
+      right:  @x + @width
+
+    @drawBox =
+      width:  @width  * @drawScale
+      height: @height * @drawScale
+      offset:
+        x: @x - (0.5*@drawScale*@width)
+        y: @y + (0.5*@drawScale*@height)
+
+  draw: ->
     @game.ctx.drawImage(
       @image,
-      @renderBox().offset().x(),
-      @renderBox().offset().y(),
-      @renderBox().width(),
-      @renderBox().height()
+      @drawBox.offset.x,
+      @drawBox.offset.y,
+      @drawBox.width,
+      @drawBox.height
     )
-
-  box: ->
-    left:   => @x
-    right:  => @x + @width
-    top:    => @y
-    bottom: => @y + @height
-
-  renderBox: ->
-    scale   = 1.2
-    width:  => @width * scale
-    height: => @height * scale
-    offset: =>
-      x: => @x - (0.5*scale*@width)
-      y: => @y + (0.5*scale*@height)
 
   isOutOfBounds: ->
     (
-      @box().left()   < 0 ||
-      @box().right()  > @game.width ||
-      @box().top()    < 0 ||
-      @box().bottom() > @game.height
+      @box.left   < 0            ||
+      @box.right  > @game.width  ||
+      @box.top    < 0            ||
+      @box.bottom > @game.height
     )
 
 class Combatant extends Entity
@@ -115,8 +128,8 @@ class Player extends Combatant
     super
     @width    = 50
     @height   = 100
-    @speed    = 5
-    @fireRate = 0.25
+    @speed    = 10
+    @fireRate = 0.01
     @$canvas  = $(@game.canvas)
 
   update: ->
@@ -128,7 +141,7 @@ class Player extends Combatant
       @fire()
 
   move: (x=null)->
-    @y = @$canvas.height() - @renderBox().height()
+    @y = @$canvas.height() - @drawBox.height
     # If no x value is given, just make sure it's on the bottom.
     return super(@x, @y) unless x
 
@@ -142,10 +155,10 @@ class Ship extends Combatant
   constructor: (@game)->
     @image   ?= @game.assets.friendlyShip
     super
-    @x        = @game.width + @width
-    @y        = @height
     @width    = 100
     @height   = 100
+    @x        = @game.width + @width
+    @y        = @height+(Math.random()*@height)
     @speed    = 10
     @fireRate = 1
 
@@ -166,26 +179,26 @@ class BounceEnemy extends Enemy
 
   constructor: (@game)->
     super
-    @y =  @height
+    @y =  @height+(Math.random()*200)
     @x =  -@width
     @move @x, @y
     @isRight = true
-    @sinIndex = 0
+    @sinIndex = Math.random()*10
 
   update: ->
-    @y = @height + 20*Math.sin(@sinIndex / 10)
+    @y = @y + 10*Math.sin(@sinIndex / 5)
     @sinIndex += 1
     if @isRight
       @move(@x + @speed)
     else
       @move(@x - @speed)
     if @x < 0
-      @isRight = true 
+      @isRight = true
       @image = @game.assets.enemyShip
     if @x > @game.width - @width
       @isRight = false
       @image = @game.assets.enemyShipLeft
-	  
+
 
   move: (x)->
     super x
@@ -202,11 +215,12 @@ class Projectile extends Entity
 
 class Cannonball extends Projectile
 
-  constructor: (@x, @y, @game)->
+  constructor: (@x, y, @game)->
     @image = @game.assets.cannonball
     super @game
     @width   = 25
     @height  = @width
+    @y       = y + 2*@height
     @speed   = 20
     @strenth = 1
 
@@ -221,7 +235,6 @@ class Explosion extends Entity
     super @game
     @width  = 150
     @height = @width
-    @speed  = 0
     @duration = 250
     @born = @game.timestamp()
     @game.addExplosion @
@@ -265,12 +278,12 @@ class Game
     @handleCollisions()
     @randomAddEnemy()
 
-  render: ->
-    @renderBackground()
-    @renderEnemies()
-    @renderProjectiles()
-    @player.render()
-    @renderExplosions()
+  draw: ->
+    @drawBackground()
+    @drawEnemies()
+    @drawProjectiles()
+    @player.draw()
+    @drawExplosions()
 
   frame: ->
     now = @timestamp()
@@ -278,7 +291,7 @@ class Game
     while @dt > @step
       @dt = @dt - @step
       @update()
-    @render()
+    @draw()
     @last = now
     window.requestAnimationFrame => @frame()
 
@@ -286,32 +299,32 @@ class Game
     window.requestAnimationFrame => @frame()
     @assets.toggleBgMusicPlayback()
 
-  renderBackground: ->
+  drawBackground: ->
     @ctx.clearRect 0, 0, @width, @height
 
   updateExplosions: ->
     for explosion of @explosions
       @explosions[explosion].update()
 
-  renderExplosions: ->
+  drawExplosions: ->
     for explosion of @explosions
-      @explosions[explosion].render()
+      @explosions[explosion].draw()
 
   updateProjectiles: ->
     for projectile of @projectiles
       @projectiles[projectile].update()
 
-  renderProjectiles: ->
+  drawProjectiles: ->
     for projectile of @projectiles
-      @projectiles[projectile].render()
+      @projectiles[projectile].draw()
 
   updateEnemies: ->
     for enemy of @enemies
       @enemies[enemy].update()
 
-  renderEnemies: ->
+  drawEnemies: ->
     for enemy of @enemies
-      @enemies[enemy].render()
+      @enemies[enemy].draw()
 
   handleCollisions: ->
     for projectile of @projectiles
@@ -320,14 +333,22 @@ class Game
         if (@projectiles[projectile] != undefined) and (@isCollision @projectiles[projectile], @enemies[enemy])
           @killEnemy @enemies[enemy]
           @removeProjectile @projectiles[projectile]
+          return
 
   killEnemy: (enemy)->
     @enemies.splice @enemies.indexOf(enemy), 1
     @addExplosion new Explosion(enemy.x, enemy.y, @)
+    unless @enemy instanceof BounceEnemy
+      @flashRed()
+
+  flashRed: ->
+    @ctx.fillStyle = '#dd0000'
+    @ctx.fillRect 0, 0, @width, @height
 
   addEnemy: ->
-    if @enemies.length < 10
-      @enemies.push @randomShip()
+    # if @enemies.length < 10
+    #   @enemies.push @randomShip()
+    @enemies.push @randomShip()
 
   randomShip: ->
     type = Math.floor(Math.random() * 3)
@@ -336,25 +357,28 @@ class Game
       else        return new BounceEnemy @
 
   randomAddEnemy: ->
-    if (1 == Math.floor(Math.random() * 50))
+    if (1 == Math.floor(Math.random() * 5))
      @addEnemy()
 
-  isCollision: (entity1, entity2)->
-    points = []
-    points.push x: entity1.box().left(),  y: entity1.box().top()
-    points.push x: entity1.box().right(), y: entity1.box().top()
-    points.push x: entity1.box().left(),  y: entity1.box().bottom()
-    points.push x: entity1.box().right(), y: entity1.box().bottom()
-
-    for point of points
-      return true if @isPointInEntity points[point], entity2
-    false
-
-  isPointInEntity: (point, entity)->
-    (
-      point.x > entity.box().left() && point.x < (entity.box().right()) &&
-      point.y > entity.box().top()  && point.y < (entity.box().bottom())
+  # This is easier to understand with !( ... || ... ), but it would be faster
+  # with ( ... && ... ) because the first failure would end the checks.
+  #
+  # Wait. Just inverting everything the way I did (commented below) ensures that
+  # a is inside b, but that's too picky. I need to work this out on paper.
+  #
+  isCollision: (a, b)->
+    !(
+      a.box.top    > b.box.bottom ||
+      a.box.bottom < b.box.top    ||
+      a.box.left   > b.box.right  ||
+      a.box.right  < b.box.left
     )
+    # (
+    #   a.box().top()    <= b.box().bottom() &&
+    #   a.box().bottom() >= b.box().top()    &&
+    #   a.box().left()   <= b.box().right()  &&
+    #   a.box().right()  >= b.box().left()
+    # )
 
   addProjectile: (projectile)->
     @projectiles.push projectile
@@ -420,7 +444,6 @@ class Assets
     @boomSound.cloneNode().play()
 
   toggleBgMusicSelection: ->
-    console.log 'ronk'
     @bgMusic.src = if @bgMusic.src.match /yakkity-sax/
         'assets/drunken-lullabies.mp3'
       else
