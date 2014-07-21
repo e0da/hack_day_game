@@ -88,6 +88,7 @@ class Entity
       offset:
         x: @x - (0.5*@drawScale*@width)
         y: @y + (0.5*@drawScale*@height)
+        # x: @x - ((@x*@drawScale)-@x)/2
 
   draw: ->
     @game.ctx.drawImage(
@@ -97,6 +98,9 @@ class Entity
       @drawBox.width,
       @drawBox.height
     )
+    if window.DEBUG || true
+      @game.ctx.strokeStyle = 'red'
+      @game.ctx.strokeRect(@x, @y, @width, @height)
 
   isOutOfBounds: ->
     (
@@ -186,7 +190,7 @@ class BounceEnemy extends Enemy
     @sinIndex = Math.random()*10
 
   update: ->
-    @y = @y + 10*Math.sin(@sinIndex / 5)
+    @y = @y + 10*Math.sin(@sinIndex / 50)
     @sinIndex += 1
     if @isRight
       @move(@x + @speed)
@@ -360,12 +364,6 @@ class Game
     if (1 == Math.floor(Math.random() * 5))
      @addEnemy()
 
-  # This is easier to understand with !( ... || ... ), but it would be faster
-  # with ( ... && ... ) because the first failure would end the checks.
-  #
-  # Wait. Just inverting everything the way I did (commented below) ensures that
-  # a is inside b, but that's too picky. I need to work this out on paper.
-  #
   isCollision: (a, b)->
     !(
       a.box.top    > b.box.bottom ||
@@ -373,12 +371,6 @@ class Game
       a.box.left   > b.box.right  ||
       a.box.right  < b.box.left
     )
-    # (
-    #   a.box().top()    <= b.box().bottom() &&
-    #   a.box().bottom() >= b.box().top()    &&
-    #   a.box().left()   <= b.box().right()  &&
-    #   a.box().right()  >= b.box().left()
-    # )
 
   addProjectile: (projectile)->
     @projectiles.push projectile
